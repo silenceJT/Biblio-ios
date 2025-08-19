@@ -3,6 +3,7 @@ import SwiftUI
 struct BibliographyDetailView: View {
     let bibliography: Bibliography
     @Environment(\.dismiss) private var dismiss
+    @State private var showingEditSheet = false
     
     var body: some View {
         NavigationView {
@@ -57,21 +58,24 @@ struct BibliographyDetailView: View {
             }
             .navigationTitle("Details")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Edit") {
-                        // Will be implemented in Phase 3
-                    }
-                }
+                               .toolbar {
+                       ToolbarItem(placement: .navigationBarTrailing) {
+                           Button("Edit") {
+                               showingEditSheet = true
+                           }
+                       }
                 
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Done") {
                         dismiss()
-                    }
-                }
-            }
-        }
-    }
+                                       }
+               }
+           }
+           .sheet(isPresented: $showingEditSheet) {
+               EditBibliographyView(bibliography: bibliography)
+           }
+       }
+   }
 }
 
 #Preview {

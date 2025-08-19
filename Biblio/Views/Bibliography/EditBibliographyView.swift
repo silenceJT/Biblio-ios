@@ -1,9 +1,16 @@
 import SwiftUI
 
-struct AddBibliographyView: View {
+struct EditBibliographyView: View {
+    let bibliography: Bibliography
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var viewModel = AddBibliographyViewModel()
-    @State private var formModel = BibliographyFormModel()
+    @StateObject private var viewModel = EditBibliographyViewModel()
+    @State private var formModel: BibliographyFormModel
+    @State private var showingDeleteAlert = false
+    
+    init(bibliography: Bibliography) {
+        self.bibliography = bibliography
+        self._formModel = State(initialValue: BibliographyFormModel(bibliography: bibliography))
+    }
     
     var body: some View {
         NavigationView {
@@ -63,8 +70,15 @@ struct AddBibliographyView: View {
                     TextField("Date of Entry", text: $formModel.dateOfEntry)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                 }
+                
+                Section {
+                    Button("Delete Bibliography") {
+                        showingDeleteAlert = true
+                    }
+                    .foregroundColor(.red)
+                }
             }
-            .navigationTitle("Add Bibliography")
+            .navigationTitle("Edit Bibliography")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -76,7 +90,8 @@ struct AddBibliographyView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
                         Task {
-                            await viewModel.createBibliography(formModel.toBibliography())
+                            let updatedBibliography = formModel.updateBibliography(bibliography)
+                            await viewModel.updateBibliography(updatedBibliography)
                         }
                     }
                     .disabled(!formModel.isValid || viewModel.isLoading)
@@ -84,7 +99,7 @@ struct AddBibliographyView: View {
             }
             .overlay {
                 if viewModel.isLoading {
-                    ProgressView("Creating...")
+                    ProgressView("Saving...")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(Color(.systemBackground))
                 }
@@ -99,12 +114,41 @@ struct AddBibliographyView: View {
                     dismiss()
                 }
             } message: {
-                Text("Bibliography created successfully!")
+                Text("Bibliography updated successfully!")
+            }
+            .alert("Delete Bibliography", isPresented: $showingDeleteAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Delete", role: .destructive) {
+                    Task {
+                        await viewModel.deleteBibliography(bibliography)
+                    }
+                }
+            } message: {
+                Text("Are you sure you want to delete '\(bibliography.title)'? This action cannot be undone.")
             }
         }
     }
 }
 
 #Preview {
-    AddBibliographyView()
+    EditBibliographyView(bibliography: Bibliography(
+        id: "preview-id",
+        title: "Sample Research Paper",
+        author: "John Doe",
+        year: 2024,
+        publication: "Journal of Research",
+        biblioName: nil,
+        languagePublished: "English",
+        languageResearched: "Spanish",
+        countryOfResearch: "USA",
+        keywords: "research, sample, preview",
+        source: "Academic Journal",
+        languageFamily: "Indo-European",
+        isbn: nil,
+        issn: nil,
+        url: nil,
+        dateOfEntry: nil,
+        createdAt: Date(),
+        updatedAt: Date()
+    ))
 }
