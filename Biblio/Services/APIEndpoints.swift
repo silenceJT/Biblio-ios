@@ -12,13 +12,13 @@ enum BibliographyEndpoint: APIEndpoint {
     var path: String {
         switch self {
         case .fetchBibliographies, .createBibliography:
-            return "/bibliography"
+            return "/mobile/bibliography"
         case .fetchBibliography(let id), .deleteBibliography(let id):
-            return "/bibliography/\(id)"
+            return "/mobile/bibliography/\(id)"
         case .updateBibliography:
-            return "/bibliography"
+            return "/mobile/bibliography"
         case .searchBibliographies:
-            return "/bibliography/search"
+            return "/mobile/bibliography"
         }
     }
     
@@ -91,6 +91,7 @@ enum BibliographyEndpoint: APIEndpoint {
 // MARK: - Authentication Endpoints
 enum AuthEndpoint: APIEndpoint {
     case login(email: String, password: String)
+    case register(name: String, email: String, password: String)
     case logout
     case refreshToken(String)
     case getCurrentUser
@@ -98,19 +99,21 @@ enum AuthEndpoint: APIEndpoint {
     var path: String {
         switch self {
         case .login:
-            return "/auth/login"
+            return "/mobile/auth/login"
+        case .register:
+            return "/auth/register"
         case .logout:
-            return "/auth/logout"
+            return "/mobile/auth/logout"
         case .refreshToken:
             return "/auth/refresh"
         case .getCurrentUser:
-            return "/auth/me"
+            return "/mobile/auth/session"
         }
     }
     
     var method: HTTPMethod {
         switch self {
-        case .login, .refreshToken:
+        case .login, .register, .refreshToken:
             return .POST
         case .logout:
             return .POST
@@ -123,6 +126,12 @@ enum AuthEndpoint: APIEndpoint {
         switch self {
         case .login(let email, let password):
             return [
+                "email": email,
+                "password": password
+            ]
+        case .register(let name, let email, let password):
+            return [
+                "name": name,
                 "email": email,
                 "password": password
             ]

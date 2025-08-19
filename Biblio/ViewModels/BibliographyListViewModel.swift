@@ -31,17 +31,33 @@ class BibliographyListViewModel: ObservableObject {
     
     // MARK: - Setup
     private func setupBindings() {
-        // Combine search text with filters for real-time filtering
+        // Combine search text with filters for real-time backend search
         Publishers.CombineLatest($searchText, $selectedFilters)
-            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
             .sink { [weak self] searchText, filters in
-                self?.applyFiltersAndSearch(searchText: searchText, filters: filters)
+                Task {
+                    if searchText.isEmpty {
+                        await self?.refresh()
+                    } else {
+                        await self?.searchBibliographies(query: searchText)
+                    }
+                }
             }
             .store(in: &cancellables)
         
         // Observe service changes
         bibliographyService.$bibliographies
-            .assign(to: \.bibliographies, on: self)
+            .sink { [weak self] bibliographies in
+                self?.bibliographies = bibliographies
+                // When we get new data from service, update filtered results too
+                if self?.searchText.isEmpty == true {
+                    // No search active, apply local filters
+                    self?.applyFiltersAndSearch(searchText: "", filters: self?.selectedFilters ?? BibliographyFilters())
+                } else {
+                    // Search is active, show search results directly
+                    self?.filteredBibliographies = bibliographies
+                }
+            }
             .store(in: &cancellables)
         
         bibliographyService.$isLoading
@@ -77,6 +93,7 @@ class BibliographyListViewModel: ObservableObject {
         if query.isEmpty {
             await refresh()
         } else {
+            // Use backend search API with current filters
             await bibliographyService.searchBibliographies(query: query, filters: selectedFilters)
         }
     }
@@ -108,50 +125,53 @@ class BibliographyListViewModel: ObservableObject {
         if !searchText.isEmpty {
             filtered = filtered.filter { bibliography in
                 bibliography.title.localizedCaseInsensitiveContains(searchText) ||
-                bibliography.authors.contains { author in
-                    author.localizedCaseInsensitiveContains(searchText)
-                } ||
-                bibliography.keywords.contains { keyword in
-                    keyword.localizedCaseInsensitiveContains(searchText)
-                } ||
-                (bibliography.journal?.localizedCaseInsensitiveContains(searchText) ?? false) ||
-                (bibliography.doi?.localizedCaseInsensitiveContains(searchText) ?? false)
+                bibliography.author.localizedCaseInsensitiveContains(searchText) ||
+                (bibliography.keywords?.localizedCaseInsensitiveContains(searchText) ?? false) ||
+                (bibliography.publication?.localizedCaseInsensitiveContains(searchText) ?? false) ||
+                (bibliography.source?.localizedCaseInsensitiveContains(searchText) ?? false)
             }
         }
         
         // Apply filters
         if let year = filters.year {
-            filtered = filtered.filter { $0.publicationYear == year }
+            filtered = filtered.filter { $0.year == year }
         }
         
         if !filters.authors.isEmpty {
             filtered = filtered.filter { bibliography in
-                bibliography.authors.contains { author in
-                    filters.authors.contains(author)
+                filters.authors.contains { author in
+                    bibliography.author.localizedCaseInsensitiveContains(author)
                 }
             }
         }
         
         if !filters.journals.isEmpty {
             filtered = filtered.filter { bibliography in
-                bibliography.journal != nil && filters.journals.contains(bibliography.journal!)
+                bibliography.publication != nil && filters.journals.contains(bibliography.publication!)
             }
         }
         
         if !filters.keywords.isEmpty {
             filtered = filtered.filter { bibliography in
-                bibliography.keywords.contains { keyword in
-                    filters.keywords.contains(keyword)
+                guard let keywords = bibliography.keywords else { return false }
+                return filters.keywords.contains { keyword in
+                    keywords.localizedCaseInsensitiveContains(keyword)
                 }
             }
         }
         
         if let dateFrom = filters.dateFrom {
-            filtered = filtered.filter { $0.createdAt >= dateFrom }
+            filtered = filtered.filter { bibliography in
+                guard let createdAt = bibliography.createdAt else { return false }
+                return createdAt >= dateFrom
+            }
         }
         
         if let dateTo = filters.dateTo {
-            filtered = filtered.filter { $0.createdAt <= dateTo }
+            filtered = filtered.filter { bibliography in
+                guard let createdAt = bibliography.createdAt else { return false }
+                return createdAt <= dateTo
+            }
         }
         
         filteredBibliographies = filtered

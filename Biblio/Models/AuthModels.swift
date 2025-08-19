@@ -14,16 +14,34 @@ struct RegisterRequest: Codable {
 
 // MARK: - Authentication Response Models
 struct AuthResponse: Codable {
-    let user: User
-    let accessToken: String
-    let refreshToken: String
-    let expiresIn: Int
+    let user: User?
+    let accessToken: String?
+    let refreshToken: String?
+    let expiresIn: Int?
+    let success: Bool?
+    let message: String?
+    let error: String?
     
     enum CodingKeys: String, CodingKey {
         case user
         case accessToken = "access_token"
         case refreshToken = "refresh_token"
         case expiresIn = "expires_in"
+        case success
+        case message
+        case error
+    }
+    
+    // NextAuth.js might return different response formats
+    // This handles both success and error cases
+    
+    // Helper computed properties for mobile API
+    var isSuccess: Bool {
+        return success == true
+    }
+    
+    var errorMessage: String? {
+        return error ?? message
     }
 }
 
@@ -43,6 +61,68 @@ struct RefreshTokenResponse: Codable {
         case accessToken = "access_token"
         case expiresIn = "expires_in"
     }
+}
+
+// MARK: - NextAuth.js Models
+struct NextAuthSession: Codable {
+    let user: User
+    let expires: String
+}
+
+struct NextAuthCsrfResponse: Codable {
+    let csrfToken: String
+}
+
+// MARK: - Mobile API Response Models
+struct MobileBibliographyResponse: Codable {
+    let success: Bool
+    let data: MobileBibliographyData
+    let timestamp: String?
+}
+
+struct MobileBibliographyData: Codable {
+    let bibliographies: [Bibliography]
+    let pagination: MobilePagination
+}
+
+struct MobilePagination: Codable {
+    let currentPage: Int
+    let totalPages: Int
+    let totalCount: Int
+    let hasNextPage: Bool
+    let hasPreviousPage: Bool
+    
+    enum CodingKeys: String, CodingKey {
+        case currentPage = "currentPage"
+        case totalPages = "totalPages"
+        case totalCount = "totalCount"
+        case hasNextPage = "hasNextPage"
+        case hasPreviousPage = "hasPreviousPage"
+    }
+}
+
+struct MobileDashboardResponse: Codable {
+    let success: Bool
+    let data: MobileDashboardData
+}
+
+struct MobileDashboardData: Codable {
+    let stats: MobileStats
+    let languages: [MobileLanguageStat]
+    let recentItems: [Bibliography]
+}
+
+struct MobileStats: Codable {
+    let totalRecords: Int
+    let thisYear: Int
+    let languages: Int
+    let countries: Int
+}
+
+struct MobileLanguageStat: Codable {
+    let language: String
+    let count: Int
+    let percentage: Double
 }
 
 // MARK: - API Response Models

@@ -65,12 +65,8 @@ class NetworkManager: ObservableObject {
         
         self.session = URLSession(configuration: config)
         
-        // TODO: Replace with your actual API base URL
-        #if DEBUG
-        self.baseURL = "http://localhost:3000/api"
-        #else
-        self.baseURL = "https://your-production-domain.com/api"
-        #endif
+        // Use AppConfig for API base URL
+        self.baseURL = AppConfig.shared.apiBaseURL
     }
     
     // MARK: - Token Management
@@ -80,6 +76,10 @@ class NetworkManager: ObservableObject {
     
     func clearAccessToken() {
         self.accessToken = nil
+    }
+    
+    func getAccessToken() -> String? {
+        return accessToken
     }
     
     // MARK: - Main Request Method
@@ -99,7 +99,38 @@ class NetworkManager: ObservableObject {
             // Decode response
             do {
                 let decoder = JSONDecoder()
-                decoder.dateDecodingStrategy = .iso8601
+                
+                // Create a custom date decoding strategy that handles multiple ISO8601 formats
+                decoder.dateDecodingStrategy = .custom { decoder in
+                    let container = try decoder.singleValueContainer()
+                    let dateString = try container.decode(String.self)
+                    
+                    // Try multiple date formats
+                    let formatters = [
+                        "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",  // With milliseconds
+                        "yyyy-MM-dd'T'HH:mm:ss'Z'",      // Without milliseconds
+                        "yyyy-MM-dd'T'HH:mm:ss.SSSZ",    // With milliseconds, no quotes
+                        "yyyy-MM-dd'T'HH:mm:ssZ"         // Without milliseconds, no quotes
+                    ]
+                    
+                    for format in formatters {
+                        let formatter = DateFormatter()
+                        formatter.dateFormat = format
+                        formatter.locale = Locale(identifier: "en_US_POSIX")
+                        formatter.timeZone = TimeZone(abbreviation: "UTC")
+                        
+                        if let date = formatter.date(from: dateString) {
+                            return date
+                        }
+                    }
+                    
+                    // If none of the formats work, throw an error
+                    throw DecodingError.dataCorruptedError(
+                        in: container,
+                        debugDescription: "Date string '\(dateString)' does not match any expected ISO8601 format"
+                    )
+                }
+                
                 return try decoder.decode(type, from: data)
             } catch {
                 print("Decoding error: \(error)")
@@ -156,7 +187,15 @@ class NetworkManager: ObservableObject {
         // Add body for POST/PUT requests
         if endpoint.method == .POST || endpoint.method == .PUT || endpoint.method == .PATCH {
             if let body = endpoint.body {
-                request.httpBody = try JSONSerialization.data(withJSONObject: body)
+                let jsonData = try JSONSerialization.data(withJSONObject: body)
+                request.httpBody = jsonData
+                
+                // Debug logging
+                if let jsonString = String(data: jsonData, encoding: .utf8) {
+                    print("🌐 Request Body: \(jsonString)")
+                    print("🌐 Request URL: \(request.url?.absoluteString ?? "nil")")
+                    print("🌐 Request Method: \(request.httpMethod ?? "nil")")
+                }
             }
         }
         
@@ -187,6 +226,17 @@ class NetworkManager: ObservableObject {
         default:
             throw NetworkError.httpError(statusCode: statusCode)
         }
+    }
+}
+
+extension NetworkManager {
+    // MARK: - Mobile API Helpers
+    func requestMobileBibliographyResponse(_ endpoint: BibliographyEndpoint) async throws -> MobileBibliographyResponse {
+        return try await request(endpoint, as: MobileBibliographyResponse.self)
+    }
+    
+    func requestMobileDashboardResponse(_ endpoint: APIEndpoint) async throws -> MobileDashboardResponse {
+        return try await request(endpoint, as: MobileDashboardResponse.self)
     }
 }
 

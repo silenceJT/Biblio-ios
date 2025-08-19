@@ -232,7 +232,7 @@ struct BibliographyRowView: View {
                 .foregroundColor(.primary)
             
             // Authors
-            if !bibliography.authors.isEmpty {
+            if !bibliography.author.isEmpty {
                 Text(bibliography.authorsDisplay)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
@@ -241,7 +241,7 @@ struct BibliographyRowView: View {
             
             // Publication details
             HStack {
-                if let year = bibliography.publicationYear {
+                if let year = bibliography.year {
                     Text("\(year)")
                         .font(.caption)
                         .padding(.horizontal, 8)
@@ -250,8 +250,8 @@ struct BibliographyRowView: View {
                         .cornerRadius(4)
                 }
                 
-                if let journal = bibliography.journal {
-                    Text(journal)
+                if let publication = bibliography.publication {
+                    Text(publication)
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
@@ -259,8 +259,8 @@ struct BibliographyRowView: View {
                 
                 Spacer()
                 
-                // DOI indicator
-                if bibliography.doi != nil {
+                // Source indicator
+                if bibliography.source != nil {
                     Image(systemName: "link")
                         .font(.caption)
                         .foregroundColor(.blue)
@@ -268,10 +268,10 @@ struct BibliographyRowView: View {
             }
             
             // Keywords
-            if !bibliography.keywords.isEmpty {
+            if let keywords = bibliography.keywords, !keywords.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack {
-                        ForEach(bibliography.keywords.prefix(3), id: \.self) { keyword in
+                        ForEach(keywords.components(separatedBy: ", ").prefix(3), id: \.self) { keyword in
                             Text(keyword)
                                 .font(.caption2)
                                 .padding(.horizontal, 6)

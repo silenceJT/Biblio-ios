@@ -14,35 +14,41 @@ struct BibliographyDetailView: View {
                         .fontWeight(.bold)
                     
                     // Authors
-                    if !bibliography.authors.isEmpty {
+                    if !bibliography.author.isEmpty {
                         Text("Authors: \(bibliography.authorsDisplay)")
                             .font(.headline)
                     }
                     
                     // Publication details
-                    if let year = bibliography.publicationYear {
+                    if let year = bibliography.year {
                         Text("Year: \(year)")
                     }
                     
-                    if let journal = bibliography.journal {
-                        Text("Journal: \(journal)")
+                    if let publication = bibliography.publication {
+                        Text("Publication: \(publication)")
                     }
                     
-                    if let doi = bibliography.doi {
-                        Text("DOI: \(doi)")
+                    if let source = bibliography.source {
+                        Text("Source: \(source)")
                             .foregroundColor(.blue)
                     }
                     
-                    // Abstract
-                    if let abstract = bibliography.abstract {
-                        Text("Abstract")
-                            .font(.headline)
-                        Text(abstract)
+                    // Language details
+                    if let languagePublished = bibliography.languagePublished {
+                        Text("Language Published: \(languagePublished)")
+                    }
+                    
+                    if let languageResearched = bibliography.languageResearched {
+                        Text("Language Researched: \(languageResearched)")
+                    }
+                    
+                    if let countryOfResearch = bibliography.countryOfResearch, !countryOfResearch.isEmpty {
+                        Text("Country of Research: \(countryOfResearch)")
                     }
                     
                     // Keywords
-                    if !bibliography.keywords.isEmpty {
-                        Text("Keywords: \(bibliography.keywordsDisplay)")
+                    if let keywords = bibliography.keywords, !keywords.isEmpty {
+                        Text("Keywords: \(keywords)")
                     }
                     
                     Spacer()

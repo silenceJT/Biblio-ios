@@ -41,22 +41,22 @@ class BibliographyService: ObservableObject {
         }
         
         do {
-            let response = try await networkManager.requestBibliographyResponse(
+            let response = try await networkManager.requestMobileBibliographyResponse(
                 BibliographyEndpoint.fetchBibliographies(page: page, limit: pageSize)
             )
             
             await MainActor.run {
                 if page == 1 {
-                    self.bibliographies = response.data
+                    self.bibliographies = response.data.bibliographies
                 } else {
-                    self.bibliographies.append(contentsOf: response.data)
+                    self.bibliographies.append(contentsOf: response.data.bibliographies)
                 }
                 
-                self.currentPage = response.page
-                self.totalPages = response.totalPages
-                self.totalCount = response.total
-                self.hasNextPage = response.hasNext
-                self.hasPreviousPage = response.hasPrevious
+                self.currentPage = response.data.pagination.currentPage
+                self.totalPages = response.data.pagination.totalPages
+                self.totalCount = response.data.pagination.totalCount
+                self.hasNextPage = response.data.pagination.hasNextPage
+                self.hasPreviousPage = response.data.pagination.hasPreviousPage
                 self.isLoading = false
             }
             
@@ -88,7 +88,7 @@ class BibliographyService: ObservableObject {
         }
         
         do {
-            let response = try await networkManager.requestBibliographyResponse(
+            let response = try await networkManager.requestMobileBibliographyResponse(
                 BibliographyEndpoint.searchBibliographies(
                     query: query,
                     page: 1,
@@ -98,12 +98,12 @@ class BibliographyService: ObservableObject {
             )
             
             await MainActor.run {
-                self.bibliographies = response.data
-                self.currentPage = response.page
-                self.totalPages = response.totalPages
-                self.totalCount = response.total
-                self.hasNextPage = response.hasNext
-                self.hasPreviousPage = response.hasPrevious
+                self.bibliographies = response.data.bibliographies
+                self.currentPage = response.data.pagination.currentPage
+                self.totalPages = response.data.pagination.totalPages
+                self.totalCount = response.data.pagination.totalCount
+                self.hasNextPage = response.data.pagination.hasNextPage
+                self.hasPreviousPage = response.data.pagination.hasPreviousPage
                 self.isLoading = false
             }
             
@@ -120,8 +120,9 @@ class BibliographyService: ObservableObject {
         await MainActor.run { isLoading = true }
         
         do {
-            let created = try await networkManager.requestBibliography(
-                BibliographyEndpoint.createBibliography(bibliography)
+            let created = try await networkManager.request(
+                BibliographyEndpoint.createBibliography(bibliography),
+                as: Bibliography.self
             )
             
             await MainActor.run {
@@ -145,8 +146,9 @@ class BibliographyService: ObservableObject {
         await MainActor.run { isLoading = true }
         
         do {
-            let updated = try await networkManager.requestBibliography(
-                BibliographyEndpoint.updateBibliography(bibliography)
+            let updated = try await networkManager.request(
+                BibliographyEndpoint.updateBibliography(bibliography),
+                as: Bibliography.self
             )
             
             await MainActor.run {
@@ -194,8 +196,9 @@ class BibliographyService: ObservableObject {
     
     /// Fetch a single bibliography by ID
     func fetchBibliography(id: String) async throws -> Bibliography {
-        return try await networkManager.requestBibliography(
-            BibliographyEndpoint.fetchBibliography(id: id)
+        return try await networkManager.request(
+            BibliographyEndpoint.fetchBibliography(id: id),
+            as: Bibliography.self
         )
     }
     

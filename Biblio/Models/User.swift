@@ -5,7 +5,7 @@ struct User: Codable, Identifiable, Hashable {
     let email: String
     let name: String?
     let role: UserRole
-    let createdAt: Date
+    let createdAt: Date?
     
     // MARK: - Computed Properties
     var displayName: String {
@@ -87,6 +87,17 @@ extension User {
             name: "Super Admin",
             role: .superAdmin,
             createdAt: Date().addingTimeInterval(-86400 * 90)
+        )
+    }
+    
+    // Mock without createdAt for backend compatibility
+    static func mockFromBackend() -> User {
+        User(
+            id: "689adb464e60b85ef28ec206",
+            email: "jessewjt@gmail.com",
+            name: "Jiatao Wu",
+            role: .superAdmin,
+            createdAt: nil
         )
     }
 }
