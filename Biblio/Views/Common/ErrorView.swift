@@ -295,16 +295,16 @@ struct ValidationErrorView: View {
 
 #Preview {
     VStack(spacing: 20) {
-        ErrorView(error: "Failed to load data") {
-            print("Retry tapped")
-        }
+        ErrorView(error: "Failed to load data", retryAction: {
+            // Retry action for preview
+        })
         
         ErrorRow(error: "Network error occurred", retryAction: {
-            print("Retry tapped")
+            // Retry action for preview
         })
         
         NetworkErrorView(error: .noInternetConnection) {
-            print("Retry tapped")
+            // Retry action for preview
         }
         
         ValidationErrorView(errors: [
@@ -312,7 +312,7 @@ struct ValidationErrorView: View {
             "At least one author is required",
             "Publication year must be valid"
         ]) {
-            print("Dismiss tapped")
+            // Dismiss action for preview
         }
     }
     .padding()

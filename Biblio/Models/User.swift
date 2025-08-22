@@ -7,6 +7,14 @@ struct User: Codable, Identifiable, Hashable {
     let role: UserRole
     let createdAt: Date?
     
+    enum CodingKeys: String, CodingKey {
+        case id = "_id"  // Map backend "_id" to iOS "id"
+        case email
+        case name
+        case role
+        case createdAt
+    }
+    
     // MARK: - Computed Properties
     var displayName: String {
         name ?? email

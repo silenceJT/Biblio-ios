@@ -5,6 +5,7 @@ struct BibliographyFormModel {
     var author: String = ""
     var year: String = ""
     var publication: String = ""
+    var publisher: String = ""
     var keywords: String = ""
     var source: String = ""
     var languagePublished: String = ""
@@ -30,6 +31,7 @@ struct BibliographyFormModel {
         self.author = bibliography.author
         self.year = bibliography.year?.description ?? ""
         self.publication = bibliography.publication ?? ""
+        self.publisher = bibliography.publisher ?? ""
         self.keywords = bibliography.keywords ?? ""
         self.source = bibliography.source ?? ""
         self.languagePublished = bibliography.languagePublished ?? ""
@@ -45,24 +47,25 @@ struct BibliographyFormModel {
     
     func toBibliography() -> Bibliography {
         Bibliography(
-            id: UUID().uuidString,
+            id: nil, // No ID for new bibliographies - backend will generate MongoDB ObjectId
             title: title.trimmingCharacters(in: .whitespacesAndNewlines),
             author: author.trimmingCharacters(in: .whitespacesAndNewlines),
             year: Int(year),
             publication: publication.isEmpty ? nil : publication,
-            biblioName: biblioName.isEmpty ? nil : biblioName,
+            publisher: publisher.isEmpty ? nil : publisher,
             languagePublished: languagePublished.isEmpty ? nil : languagePublished,
             languageResearched: languageResearched.isEmpty ? nil : languageResearched,
             countryOfResearch: countryOfResearch.isEmpty ? nil : countryOfResearch,
             keywords: keywords.isEmpty ? nil : keywords,
             source: source.isEmpty ? nil : source,
             languageFamily: languageFamily.isEmpty ? nil : languageFamily,
+            biblioName: biblioName.isEmpty ? nil : biblioName,
             isbn: isbn.isEmpty ? nil : isbn,
             issn: issn.isEmpty ? nil : issn,
             url: url.isEmpty ? nil : url,
             dateOfEntry: dateOfEntry.isEmpty ? nil : dateOfEntry,
-            createdAt: Date(),
-            updatedAt: Date()
+            createdAt: nil, // Backend will set creation timestamp
+            updatedAt: nil  // Backend will set update timestamp
         )
     }
     
@@ -73,19 +76,23 @@ struct BibliographyFormModel {
             author: author.trimmingCharacters(in: .whitespacesAndNewlines),
             year: Int(year),
             publication: publication.isEmpty ? nil : publication,
-            biblioName: biblioName.isEmpty ? nil : biblioName,
+            publisher: publisher.isEmpty ? nil : publisher,
             languagePublished: languagePublished.isEmpty ? nil : languagePublished,
             languageResearched: languageResearched.isEmpty ? nil : languageResearched,
             countryOfResearch: countryOfResearch.isEmpty ? nil : countryOfResearch,
             keywords: keywords.isEmpty ? nil : keywords,
             source: source.isEmpty ? nil : source,
             languageFamily: languageFamily.isEmpty ? nil : languageFamily,
+            biblioName: biblioName.isEmpty ? nil : biblioName,
             isbn: isbn.isEmpty ? nil : isbn,
             issn: issn.isEmpty ? nil : issn,
             url: url.isEmpty ? nil : url,
             dateOfEntry: dateOfEntry.isEmpty ? nil : dateOfEntry,
             createdAt: bibliography.createdAt,
-            updatedAt: Date()
+            updatedAt: nil, // Backend will set update timestamp
+            createdBy: bibliography.createdBy,
+            updatedBy: bibliography.updatedBy,
+            publicationDate: bibliography.publicationDate
         )
     }
 }

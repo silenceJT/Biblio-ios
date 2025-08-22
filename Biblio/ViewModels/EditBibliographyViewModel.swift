@@ -17,8 +17,7 @@ class EditBibliographyViewModel: ObservableObject {
         showSuccess = false
         
         do {
-            let updated = try await bibliographyService.updateBibliography(bibliography)
-            print("Successfully updated bibliography: \(updated.title)")
+            let _ = try await bibliographyService.updateBibliography(bibliography)
             showSuccess = true
             
             // Small delay to show success message
@@ -27,7 +26,6 @@ class EditBibliographyViewModel: ObservableObject {
         } catch {
             showError = true
             errorMessage = error.localizedDescription
-            print("Failed to update bibliography: \(error)")
         }
         
         isLoading = false
@@ -39,14 +37,19 @@ class EditBibliographyViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            try await bibliographyService.deleteBibliography(bibliography.id)
-            print("Successfully deleted bibliography: \(bibliography.title)")
+            guard let bibliographyId = bibliography.id else {
+                showError = true
+                errorMessage = "Cannot delete bibliography without ID"
+                isLoading = false
+                return
+            }
+            
+            try await bibliographyService.deleteBibliography(bibliographyId)
             showSuccess = true
             
         } catch {
             showError = true
             errorMessage = error.localizedDescription
-            print("Failed to delete bibliography: \(error)")
         }
         
         isLoading = false

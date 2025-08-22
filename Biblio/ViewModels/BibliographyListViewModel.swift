@@ -160,19 +160,9 @@ class BibliographyListViewModel: ObservableObject {
             }
         }
         
-        if let dateFrom = filters.dateFrom {
-            filtered = filtered.filter { bibliography in
-                guard let createdAt = bibliography.createdAt else { return false }
-                return createdAt >= dateFrom
-            }
-        }
-        
-        if let dateTo = filters.dateTo {
-            filtered = filtered.filter { bibliography in
-                guard let createdAt = bibliography.createdAt else { return false }
-                return createdAt <= dateTo
-            }
-        }
+        // Date filtering is now handled by the backend API since dates are strings
+        // Local date filtering would require parsing ISO 8601 strings to Date objects
+        // For now, we rely on backend filtering for date ranges
         
         filteredBibliographies = filtered
     }
@@ -208,15 +198,6 @@ class BibliographyListViewModel: ObservableObject {
     func clearError() {
         error = nil
         bibliographyService.clearError()
-    }
-    
-    // MARK: - Mock Data for Development
-    func loadMockData() {
-        bibliographyService.loadMockData()
-    }
-    
-    func clearData() {
-        bibliographyService.clearData()
     }
     
     // MARK: - Computed Properties

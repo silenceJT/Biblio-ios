@@ -14,26 +14,19 @@ struct RegisterRequest: Codable {
 
 // MARK: - Authentication Response Models
 struct AuthResponse: Codable {
+    let success: Bool
     let user: User?
-    let accessToken: String?
-    let refreshToken: String?
-    let expiresIn: Int?
-    let success: Bool?
+    let token: String?
     let message: String?
     let error: String?
     
     enum CodingKeys: String, CodingKey {
-        case user
-        case accessToken = "access_token"
-        case refreshToken = "refresh_token"
-        case expiresIn = "expires_in"
         case success
+        case user
+        case token
         case message
         case error
     }
-    
-    // NextAuth.js might return different response formats
-    // This handles both success and error cases
     
     // Helper computed properties for mobile API
     var isSuccess: Bool {
@@ -42,6 +35,10 @@ struct AuthResponse: Codable {
     
     var errorMessage: String? {
         return error ?? message
+    }
+    
+    var accessToken: String? {
+        return token
     }
 }
 
@@ -77,28 +74,34 @@ struct NextAuthCsrfResponse: Codable {
 struct MobileBibliographyResponse: Codable {
     let success: Bool
     let data: MobileBibliographyData
-    let timestamp: String?
+    let error: String?
 }
 
 struct MobileBibliographyData: Codable {
     let bibliographies: [Bibliography]
     let pagination: MobilePagination
+    let search: MobileSearchData?
 }
 
 struct MobilePagination: Codable {
     let currentPage: Int
-    let totalPages: Int
+    let limit: Int?
     let totalCount: Int
+    let totalPages: Int
     let hasNextPage: Bool
     let hasPreviousPage: Bool
     
-    enum CodingKeys: String, CodingKey {
-        case currentPage = "currentPage"
-        case totalPages = "totalPages"
-        case totalCount = "totalCount"
-        case hasNextPage = "hasNextPage"
-        case hasPreviousPage = "hasPreviousPage"
-    }
+    // Computed properties for backward compatibility
+    var page: Int { currentPage }
+    var total: Int { totalCount }
+    var pages: Int { totalPages }
+}
+
+struct MobileSearchData: Codable {
+    let query: String?
+    let filters: [String: String?]? // Allow null values in filters
+    let sortBy: String?
+    let sortOrder: String?
 }
 
 struct MobileDashboardResponse: Codable {
@@ -173,32 +176,78 @@ struct SearchRequest: Codable {
 
 struct BibliographyFilters: Codable {
     let year: Int?
+    let yearFrom: Int? // New: year range start
+    let yearTo: Int?   // New: year range end
     let authors: [String]
     let journals: [String]
     let keywords: [String]
+    let languagePublished: String?
+    let languageResearched: String?
+    let countryOfResearch: String?
+    let source: String?
+    let languageFamily: String?
+    let publication: String?
+    let publisher: String?
+    let biblioName: String?
     let dateFrom: Date?
     let dateTo: Date?
     
     enum CodingKeys: String, CodingKey {
         case year
+        case yearFrom = "year_from"
+        case yearTo = "year_to"
         case authors
         case journals
         case keywords
+        case languagePublished = "language_published"
+        case languageResearched = "language_researched"
+        case countryOfResearch = "country_of_research"
+        case source
+        case languageFamily = "language_family"
+        case publication
+        case publisher
+        case biblioName = "biblio_name"
         case dateFrom = "date_from"
         case dateTo = "date_to"
     }
     
-    init(year: Int? = nil, authors: [String] = [], journals: [String] = [], keywords: [String] = [], dateFrom: Date? = nil, dateTo: Date? = nil) {
+    init(year: Int? = nil, yearFrom: Int? = nil, yearTo: Int? = nil, authors: [String] = [], journals: [String] = [], keywords: [String] = [], languagePublished: String? = nil, languageResearched: String? = nil, countryOfResearch: String? = nil, source: String? = nil, languageFamily: String? = nil, publication: String? = nil, publisher: String? = nil, biblioName: String? = nil, dateFrom: Date? = nil, dateTo: Date? = nil) {
         self.year = year
+        self.yearFrom = yearFrom
+        self.yearTo = yearTo
         self.authors = authors
         self.journals = journals
         self.keywords = keywords
+        self.languagePublished = languagePublished
+        self.languageResearched = languageResearched
+        self.countryOfResearch = countryOfResearch
+        self.source = source
+        self.languageFamily = languageFamily
+        self.publication = publication
+        self.publisher = publisher
+        self.biblioName = biblioName
         self.dateFrom = dateFrom
         self.dateTo = dateTo
     }
     
     var isEmpty: Bool {
-        year == nil && authors.isEmpty && journals.isEmpty && keywords.isEmpty && dateFrom == nil && dateTo == nil
+        year == nil && yearFrom == nil && yearTo == nil && authors.isEmpty && journals.isEmpty && keywords.isEmpty && 
+        languagePublished == nil && languageResearched == nil && countryOfResearch == nil && 
+        source == nil && languageFamily == nil && publication == nil && publisher == nil && 
+        biblioName == nil && dateFrom == nil && dateTo == nil
+    }
+}
+
+// MARK: - Update Bibliography Response
+struct UpdateBibliographyResponse: Codable {
+    let success: Bool
+    let data: Bibliography
+    let timestamp: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case success
+        case data
+        case timestamp
     }
 }
 

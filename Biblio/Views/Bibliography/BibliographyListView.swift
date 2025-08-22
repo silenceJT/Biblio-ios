@@ -7,52 +7,52 @@ struct BibliographyListView: View {
     @State private var selectedBibliography: Bibliography?
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Search and Filter Bar
-                searchAndFilterBar
-                
-                // Content
-                if viewModel.isLoading && viewModel.bibliographies.isEmpty {
-                    LoadingView(message: "Loading bibliographies...")
-                } else if let error = viewModel.error, viewModel.bibliographies.isEmpty {
-                    ErrorView(error: error) {
-                        Task {
-                            await viewModel.refresh()
-                        }
+        VStack(spacing: 0) {
+            // Search and Filter Bar
+            searchAndFilterBar
+            
+            // Content
+            if viewModel.isLoading && viewModel.bibliographies.isEmpty {
+                LoadingView(message: "Loading bibliographies...")
+            } else if let error = viewModel.error, viewModel.bibliographies.isEmpty {
+                ErrorView(error: error, retryAction: {
+                    Task {
+                        await viewModel.refresh()
                     }
-                } else if viewModel.bibliographies.isEmpty {
-                    emptyStateView
-                } else {
-                    bibliographyList
-                }
-            }
-            .navigationTitle("Bibliography")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Add") {
-                        showingAddSheet = true
-                    }
-                    .disabled(viewModel.isLoading)
-                }
-            }
-            .refreshable {
-                await viewModel.refresh()
-            }
-            .sheet(isPresented: $showingAddSheet) {
-                AddBibliographyView()
-            }
-            .sheet(isPresented: $showingFilters) {
-                FilterView(filters: $viewModel.selectedFilters)
-            }
-            .sheet(item: $selectedBibliography) { bibliography in
-                BibliographyDetailView(bibliography: bibliography)
+                })
+            } else if viewModel.bibliographies.isEmpty {
+                emptyStateView
+            } else {
+                bibliographyList
             }
         }
+        .navigationTitle("Bibliography")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Add") {
+                    showingAddSheet = true
+                }
+                .disabled(viewModel.isLoading)
+            }
+        }
+        .refreshable {
+            await viewModel.refresh()
+        }
+        .sheet(isPresented: $showingAddSheet) {
+            AddBibliographyView()
+        }
+        .sheet(isPresented: $showingFilters) {
+            FilterView(filters: $viewModel.selectedFilters)
+        }
+        .sheet(item: $selectedBibliography) { bibliography in
+            BibliographyDetailView(bibliography: bibliography)
+        }
         .onAppear {
-            // Load mock data for development
+            // Load bibliographies from backend
             if viewModel.bibliographies.isEmpty {
-                viewModel.loadMockData()
+                Task {
+                    await viewModel.loadBibliographies()
+                }
             }
         }
     }
@@ -159,7 +159,9 @@ struct BibliographyListView: View {
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         Button("Delete", role: .destructive) {
                             Task {
-                                try? await viewModel.deleteBibliography(bibliography.id)
+                                if let bibliographyId = bibliography.id {
+                                    try? await viewModel.deleteBibliography(bibliographyId)
+                                }
                             }
                         }
                     }

@@ -28,6 +28,9 @@ struct EditBibliographyView: View {
                     
                     TextField("Publication/Journal", text: $formModel.publication)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
+                    
+                    TextField("Publisher", text: $formModel.publisher)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
                 }
                 
                 Section("Additional Details") {
@@ -137,18 +140,19 @@ struct EditBibliographyView: View {
         author: "John Doe",
         year: 2024,
         publication: "Journal of Research",
-        biblioName: nil,
+        publisher: "Academic Press",
         languagePublished: "English",
         languageResearched: "Spanish",
         countryOfResearch: "USA",
         keywords: "research, sample, preview",
         source: "Academic Journal",
         languageFamily: "Indo-European",
+        biblioName: nil,
         isbn: nil,
         issn: nil,
         url: nil,
         dateOfEntry: nil,
-        createdAt: Date(),
-        updatedAt: Date()
+        createdAt: nil,
+        updatedAt: nil
     ))
 }

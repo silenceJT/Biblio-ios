@@ -99,44 +99,11 @@ class NetworkManager: ObservableObject {
             // Decode response
             do {
                 let decoder = JSONDecoder()
-                
-                // Create a custom date decoding strategy that handles multiple ISO8601 formats
-                decoder.dateDecodingStrategy = .custom { decoder in
-                    let container = try decoder.singleValueContainer()
-                    let dateString = try container.decode(String.self)
-                    
-                    // Try multiple date formats
-                    let formatters = [
-                        "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",  // With milliseconds
-                        "yyyy-MM-dd'T'HH:mm:ss'Z'",      // Without milliseconds
-                        "yyyy-MM-dd'T'HH:mm:ss.SSSZ",    // With milliseconds, no quotes
-                        "yyyy-MM-dd'T'HH:mm:ssZ"         // Without milliseconds, no quotes
-                    ]
-                    
-                    for format in formatters {
-                        let formatter = DateFormatter()
-                        formatter.dateFormat = format
-                        formatter.locale = Locale(identifier: "en_US_POSIX")
-                        formatter.timeZone = TimeZone(abbreviation: "UTC")
-                        
-                        if let date = formatter.date(from: dateString) {
-                            return date
-                        }
-                    }
-                    
-                    // If none of the formats work, throw an error
-                    throw DecodingError.dataCorruptedError(
-                        in: container,
-                        debugDescription: "Date string '\(dateString)' does not match any expected ISO8601 format"
-                    )
-                }
-                
+                // No custom date decoding needed since Bibliography model uses String? for dates
                 return try decoder.decode(type, from: data)
-            } catch {
-                print("Decoding error: \(error)")
-                print("Response data: \(String(data: data, encoding: .utf8) ?? "Unable to read data")")
-                throw NetworkError.decodingError
-            }
+                            } catch {
+                    throw NetworkError.decodingError
+                }
             
         } catch {
             if let networkError = error as? NetworkError {
@@ -189,13 +156,7 @@ class NetworkManager: ObservableObject {
             if let body = endpoint.body {
                 let jsonData = try JSONSerialization.data(withJSONObject: body)
                 request.httpBody = jsonData
-                
-                // Debug logging
-                if let jsonString = String(data: jsonData, encoding: .utf8) {
-                    print("🌐 Request Body: \(jsonString)")
-                    print("🌐 Request URL: \(request.url?.absoluteString ?? "nil")")
-                    print("🌐 Request Method: \(request.httpMethod ?? "nil")")
-                }
+
             }
         }
         

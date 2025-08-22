@@ -17,8 +17,7 @@ class AddBibliographyViewModel: ObservableObject {
         showSuccess = false
         
         do {
-            let created = try await bibliographyService.createBibliography(bibliography)
-            print("Successfully created bibliography: \(created.title)")
+            let _ = try await bibliographyService.createBibliography(bibliography)
             showSuccess = true
             
             // Small delay to show success message
@@ -27,7 +26,6 @@ class AddBibliographyViewModel: ObservableObject {
         } catch {
             showError = true
             errorMessage = error.localizedDescription
-            print("Failed to create bibliography: \(error)")
         }
         
         isLoading = false

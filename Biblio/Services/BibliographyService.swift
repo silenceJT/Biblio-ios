@@ -120,10 +120,31 @@ class BibliographyService: ObservableObject {
         await MainActor.run { isLoading = true }
         
         do {
-            let created = try await networkManager.request(
-                BibliographyEndpoint.createBibliography(bibliography),
-                as: Bibliography.self
+            // Create minimal create payload with only updatable fields (no _id, createdAt, updatedAt)
+            let createData: [String: Any] = [
+                "title": bibliography.title,
+                "author": bibliography.author,
+                "year": bibliography.year,
+                "publication": bibliography.publication,
+                "publisher": bibliography.publisher,
+                "language_published": bibliography.languagePublished,
+                "language_researched": bibliography.languageResearched,
+                "country_of_research": bibliography.countryOfResearch,
+                "keywords": bibliography.keywords,
+                "source": bibliography.source,
+                "language_family": bibliography.languageFamily,
+                "biblio_name": bibliography.biblioName,
+                "isbn": bibliography.isbn,
+                "issn": bibliography.issn,
+                "url": bibliography.url,
+                "date_of_entry": bibliography.dateOfEntry
+            ].compactMapValues { $0 } // Remove nil values
+            
+            let response: UpdateBibliographyResponse = try await networkManager.request(
+                BibliographyEndpoint.createBibliography(createData)
             )
+            
+            let created = response.data
             
             await MainActor.run {
                 self.bibliographies.insert(created, at: 0)
@@ -146,13 +167,39 @@ class BibliographyService: ObservableObject {
         await MainActor.run { isLoading = true }
         
         do {
-            let updated = try await networkManager.request(
-                BibliographyEndpoint.updateBibliography(bibliography),
-                as: Bibliography.self
+            // Create minimal update payload with only updatable fields
+            let updateData: [String: Any] = [
+                "title": bibliography.title,
+                "author": bibliography.author,
+                "year": bibliography.year,
+                "publication": bibliography.publication,
+                "publisher": bibliography.publisher,
+                "language_published": bibliography.languagePublished,
+                "language_researched": bibliography.languageResearched,
+                "country_of_research": bibliography.countryOfResearch,
+                "keywords": bibliography.keywords,
+                "source": bibliography.source,
+                "language_family": bibliography.languageFamily,
+                "biblio_name": bibliography.biblioName,
+                "isbn": bibliography.isbn,
+                "issn": bibliography.issn,
+                "url": bibliography.url,
+                "date_of_entry": bibliography.dateOfEntry
+            ].compactMapValues { $0 } // Remove nil values
+            
+            guard let bibliographyId = bibliography.id else {
+                throw NSError(domain: "BibliographyService", code: 400, userInfo: [NSLocalizedDescriptionKey: "Cannot update bibliography without ID"])
+            }
+            
+            let response: UpdateBibliographyResponse = try await networkManager.request(
+                BibliographyEndpoint.updateBibliography(id: bibliographyId, updateData: updateData)
             )
             
+            let updated = response.data
+            
             await MainActor.run {
-                if let index = self.bibliographies.firstIndex(where: { $0.id == bibliography.id }) {
+                if let bibliographyId = bibliography.id,
+                   let index = self.bibliographies.firstIndex(where: { $0.id == bibliographyId }) {
                     self.bibliographies[index] = updated
                 }
                 self.isLoading = false
@@ -181,7 +228,7 @@ class BibliographyService: ObservableObject {
             )
             
             await MainActor.run {
-                self.bibliographies.removeAll { $0.id == id }
+                self.bibliographies.removeAll { $0.identifier == id }
                 self.isLoading = false
             }
             
@@ -209,41 +256,14 @@ class BibliographyService: ObservableObject {
     
     /// Get bibliography by ID from local cache
     func getBibliography(id: String) -> Bibliography? {
-        return bibliographies.first { $0.id == id }
+        return bibliographies.first { $0.identifier == id }
     }
     
     /// Check if bibliography exists locally
     func hasBibliography(id: String) -> Bool {
-        return bibliographies.contains { $0.id == id }
+        return bibliographies.contains { $0.identifier == id }
     }
 }
 
 // MARK: - Empty Response for DELETE operations
 struct EmptyResponse: Codable {}
-
-// MARK: - Mock Service for Development
-extension BibliographyService {
-    /// Load mock data for development
-    func loadMockData() {
-        bibliographies = Bibliography.mockList()
-        currentPage = 1
-        totalPages = 1
-        totalCount = bibliographies.count
-        hasNextPage = false
-        hasPreviousPage = false
-        isLoading = false
-        error = nil
-    }
-    
-    /// Clear all data
-    func clearData() {
-        bibliographies.removeAll()
-        currentPage = 1
-        totalPages = 1
-        totalCount = 0
-        hasNextPage = false
-        hasPreviousPage = false
-        isLoading = false
-        error = nil
-    }
-}

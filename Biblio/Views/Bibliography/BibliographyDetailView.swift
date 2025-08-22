@@ -29,6 +29,10 @@ struct BibliographyDetailView: View {
                         Text("Publication: \(publication)")
                     }
                     
+                    if let publisher = bibliography.publisher {
+                        Text("Publisher: \(publisher)")
+                    }
+                    
                     if let source = bibliography.source {
                         Text("Source: \(source)")
                             .foregroundColor(.blue)
@@ -79,5 +83,25 @@ struct BibliographyDetailView: View {
 }
 
 #Preview {
-    BibliographyDetailView(bibliography: Bibliography.mock())
+    BibliographyDetailView(bibliography: Bibliography(
+        id: "preview_id",
+        title: "Sample Research Paper",
+        author: "John Doe, Jane Smith",
+        year: 2024,
+        publication: "Journal of Computer Science",
+        publisher: "Academic Press",
+        languagePublished: "English",
+        languageResearched: "English",
+        countryOfResearch: "United States",
+        keywords: "computer science, research, sample",
+        source: "Sample source",
+        languageFamily: "Indo_European",
+        biblioName: nil,
+        isbn: "1234567890",
+        issn: nil,
+        url: nil,
+        dateOfEntry: nil,
+        createdAt: nil,
+        updatedAt: nil
+    ))
 }

@@ -17,7 +17,6 @@ class AuthenticationService: ObservableObject {
     
     // MARK: - Keychain Keys
     private let accessTokenKey = "accessToken"
-    private let refreshTokenKey = "refreshToken"
     private let userDataKey = "userData"
     private let biometricEnabledKey = "biometricEnabled"
     
@@ -81,22 +80,16 @@ class AuthenticationService: ObservableObject {
                 AuthEndpoint.login(email: email, password: password)
             )
             
-            print("🔐 AuthResponse: success=\(response.success), user=\(response.user?.email ?? "nil"), error=\(response.error ?? "none")")
-            
             // Validate the response
             guard response.isSuccess, let user = response.user else {
                 let errorMsg = response.errorMessage ?? "Invalid response from server"
-                print("🔐 Authentication failed: \(errorMsg)")
                 throw AuthError.authenticationFailed(errorMsg)
             }
-            
-            print("🔐 Authentication successful for user: \(user.email)")
             
             // Store credentials securely
             try await storeCredentials(response)
             
             await MainActor.run {
-                print("🔐 Updating UI state: isAuthenticated = true")
                 self.currentUser = user
                 self.isAuthenticated = true
                 self.isLoading = false
@@ -143,7 +136,7 @@ class AuthenticationService: ObservableObject {
                 let _: EmptyResponse = try await networkManager.request(AuthEndpoint.logout, as: EmptyResponse.self)
             }
         } catch {
-            print("Logout API call failed: \(error)")
+            // Logout API call failed, but we'll clear local state anyway
         }
         
         // Clear stored credentials
@@ -154,27 +147,6 @@ class AuthenticationService: ObservableObject {
             self.isAuthenticated = false
             self.isLoading = false
             self.error = nil
-        }
-    }
-    
-    func refreshToken() async throws {
-        guard let refreshToken = getStoredRefreshToken() else {
-            throw AuthError.noRefreshToken
-        }
-        
-        do {
-            let request = RefreshTokenRequest(refreshToken: refreshToken)
-            let response: RefreshTokenResponse = try await networkManager.request(
-                AuthEndpoint.refreshToken(request.refreshToken)
-            )
-            
-            // Store new tokens
-            try await storeNewTokens(accessToken: response.accessToken, refreshToken: refreshToken)
-            
-        } catch {
-            // Refresh failed, user needs to login again
-            await signOut()
-            throw AuthError.tokenRefreshFailed
         }
     }
     
@@ -240,7 +212,7 @@ class AuthenticationService: ObservableObject {
             do {
                 try await restoreSessionFromStoredCredentials()
             } catch {
-                print("Failed to restore session: \(error)")
+                // Session restoration failed - user will need to login again
             }
         }
     }
@@ -265,15 +237,15 @@ class AuthenticationService: ObservableObject {
             }
             
         } catch {
-            // Token is invalid, try to refresh
-            try await refreshToken()
+            // Token is invalid, sign out user
+            await signOut()
         }
     }
     
     private func storeCredentials(_ response: AuthResponse) async throws {
-        // Store tokens in keychain if available
-        if let accessToken = response.accessToken, let refreshToken = response.refreshToken {
-            try await storeTokens(accessToken: accessToken, refreshToken: refreshToken)
+        // Store access token if available
+        if let accessToken = response.accessToken {
+            try await storeAccessToken(accessToken)
         }
         
         // Store user data if available
@@ -282,17 +254,12 @@ class AuthenticationService: ObservableObject {
         }
     }
     
-    private func storeTokens(accessToken: String, refreshToken: String) async throws {
+    private func storeAccessToken(_ accessToken: String) async throws {
         // Store in NetworkManager for immediate use
         networkManager.setAccessToken(accessToken)
         
         // Store in UserDefaults for persistence (not secure for production)
         UserDefaults.standard.set(accessToken, forKey: accessTokenKey)
-        UserDefaults.standard.set(refreshToken, forKey: refreshTokenKey)
-    }
-    
-    private func storeNewTokens(accessToken: String, refreshToken: String) async throws {
-        try await storeTokens(accessToken: accessToken, refreshToken: refreshToken)
     }
     
     private func storeUserData(_ user: User) async throws {
@@ -305,10 +272,6 @@ class AuthenticationService: ObservableObject {
         return UserDefaults.standard.string(forKey: accessTokenKey)
     }
     
-    private func getStoredRefreshToken() -> String? {
-        return UserDefaults.standard.string(forKey: refreshTokenKey)
-    }
-    
     private func getStoredUserData() -> Data? {
         return UserDefaults.standard.data(forKey: userDataKey)
     }
@@ -319,7 +282,6 @@ class AuthenticationService: ObservableObject {
         
         // Clear from UserDefaults
         UserDefaults.standard.removeObject(forKey: accessTokenKey)
-        UserDefaults.standard.removeObject(forKey: refreshTokenKey)
         UserDefaults.standard.removeObject(forKey: userDataKey)
     }
     
@@ -333,27 +295,12 @@ class AuthenticationService: ObservableObject {
     func validatePassword(_ password: String) -> Bool {
         return password.count >= 8
     }
-    
-    // MARK: - NextAuth.js Session Validation
-    private func validateSession() async throws {
-        // Call NextAuth.js session endpoint to validate the authentication
-        let session: NextAuthSession = try await networkManager.request(
-            AuthEndpoint.getCurrentUser
-        )
-        
-        // Update current user with session data
-        await MainActor.run {
-            self.currentUser = session.user
-        }
-    }
 }
 
 // MARK: - Authentication Errors
 enum AuthError: LocalizedError {
     case biometricsNotAvailable
     case biometricAuthenticationFailed
-    case noRefreshToken
-    case tokenRefreshFailed
     case noStoredCredentials
     case invalidCredentials
     case authenticationFailed(String)
@@ -366,10 +313,6 @@ enum AuthError: LocalizedError {
             return "Biometric authentication is not available on this device"
         case .biometricAuthenticationFailed:
             return "Biometric authentication failed"
-        case .noRefreshToken:
-            return "No refresh token available"
-        case .tokenRefreshFailed:
-            return "Failed to refresh authentication token"
         case .noStoredCredentials:
             return "No stored credentials found"
         case .invalidCredentials:

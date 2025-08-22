@@ -4,8 +4,8 @@ import Foundation
 enum BibliographyEndpoint: APIEndpoint {
     case fetchBibliographies(page: Int, limit: Int)
     case fetchBibliography(id: String)
-    case createBibliography(Bibliography)
-    case updateBibliography(Bibliography)
+    case createBibliography([String: Any])
+    case updateBibliography(id: String, updateData: [String: Any])
     case deleteBibliography(id: String)
     case searchBibliographies(query: String, page: Int, limit: Int, filters: BibliographyFilters?)
     
@@ -15,8 +15,8 @@ enum BibliographyEndpoint: APIEndpoint {
             return "/mobile/bibliography"
         case .fetchBibliography(let id), .deleteBibliography(let id):
             return "/mobile/bibliography/\(id)"
-        case .updateBibliography:
-            return "/mobile/bibliography"
+        case .updateBibliography(let id, _):
+            return "/mobile/bibliography/\(id)"
         case .searchBibliographies:
             return "/mobile/bibliography"
         }
@@ -53,6 +53,12 @@ enum BibliographyEndpoint: APIEndpoint {
                 if let year = filters.year {
                     items.append(URLQueryItem(name: "year", value: "\(year)"))
                 }
+                if let yearFrom = filters.yearFrom {
+                    items.append(URLQueryItem(name: "yearFrom", value: "\(yearFrom)"))
+                }
+                if let yearTo = filters.yearTo {
+                    items.append(URLQueryItem(name: "yearTo", value: "\(yearTo)"))
+                }
                 if !filters.authors.isEmpty {
                     items.append(URLQueryItem(name: "authors", value: filters.authors.joined(separator: ",")))
                 }
@@ -61,6 +67,30 @@ enum BibliographyEndpoint: APIEndpoint {
                 }
                 if !filters.keywords.isEmpty {
                     items.append(URLQueryItem(name: "keywords", value: filters.keywords.joined(separator: ",")))
+                }
+                if let languagePublished = filters.languagePublished {
+                    items.append(URLQueryItem(name: "language_published", value: languagePublished))
+                }
+                if let languageResearched = filters.languageResearched {
+                    items.append(URLQueryItem(name: "language_researched", value: languageResearched))
+                }
+                if let countryOfResearch = filters.countryOfResearch {
+                    items.append(URLQueryItem(name: "country_of_research", value: countryOfResearch))
+                }
+                if let source = filters.source {
+                    items.append(URLQueryItem(name: "source", value: source))
+                }
+                if let languageFamily = filters.languageFamily {
+                    items.append(URLQueryItem(name: "language_family", value: languageFamily))
+                }
+                if let publication = filters.publication {
+                    items.append(URLQueryItem(name: "publication", value: publication))
+                }
+                if let publisher = filters.publisher {
+                    items.append(URLQueryItem(name: "publisher", value: publisher))
+                }
+                if let biblioName = filters.biblioName {
+                    items.append(URLQueryItem(name: "biblio_name", value: biblioName))
                 }
                 if let dateFrom = filters.dateFrom {
                     let formatter = ISO8601DateFormatter()
@@ -80,8 +110,10 @@ enum BibliographyEndpoint: APIEndpoint {
     
     var body: [String: Any]? {
         switch self {
-        case .createBibliography(let bibliography), .updateBibliography(let bibliography):
-            return try? bibliography.asDictionary()
+        case .createBibliography(let createData):
+            return createData
+        case .updateBibliography(_, let updateData):
+            return updateData
         default:
             return nil
         }

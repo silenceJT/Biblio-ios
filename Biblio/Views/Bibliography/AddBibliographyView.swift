@@ -21,6 +21,9 @@ struct AddBibliographyView: View {
                     
                     TextField("Publication/Journal", text: $formModel.publication)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
+                    
+                    TextField("Publisher", text: $formModel.publisher)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
                 }
                 
                 Section("Additional Details") {
